@@ -1,0 +1,124 @@
+#include <iostream>
+#include <vector>
+#include <random>
+#include <algorithm>
+#include <chrono>
+
+using namespace std;
+using namespace std::chrono;
+
+const int N = 1000000;
+
+void quickSort(vector<double>& arr, int low, int high) {
+    if (low < high) {
+        double pivot = arr[low + (high - low) / 2];
+        int i = low - 1;
+        int j = high + 1;
+        while (true) {
+            do { i++; } while (arr[i] < pivot);
+            do { j--; } while (arr[j] > pivot);
+            if (i >= j) break;
+            swap(arr[i], arr[j]);
+        }
+        quickSort(arr, low, j);
+        quickSort(arr, j + 1, high);
+    }
+}
+
+void heapify(vector<double>& arr, int n, int i) {
+    int largest = i;
+    int l = 2 * i + 1;
+    int r = 2 * i + 2;
+
+    if (l < n && arr[l] > arr[largest]) largest = l;
+    if (r < n && arr[r] > arr[largest]) largest = r;
+
+    if (largest != i) {
+        swap(arr[i], arr[largest]);
+        heapify(arr, n, largest);
+    }
+}
+
+void heapSort(vector<double>& arr) {
+    int n = arr.size();
+    for (int i = n / 2 - 1; i >= 0; i--)
+        heapify(arr, n, i);
+    for (int i = n - 1; i > 0; i--) {
+        swap(arr[0], arr[i]);
+        heapify(arr, i, 0);
+    }
+}
+
+void mergeArr(vector<double>& arr, int l, int m, int r) {
+    int n1 = m - l + 1;
+    int n2 = r - m;
+    vector<double> L(n1), R(n2);
+
+    for (int i = 0; i < n1; i++) L[i] = arr[l + i];
+    for (int i = 0; i < n2; i++) R[i] = arr[m + 1 + i];
+
+    int i = 0, j = 0, k = l;
+    while (i < n1 && j < n2) {
+        if (L[i] <= R[j]) arr[k++] = L[i++];
+        else arr[k++] = R[j++];
+    }
+    while (i < n1) arr[k++] = L[i++];
+    while (j < n2) arr[k++] = R[j++];
+}
+
+void mergeSort(vector<double>& arr, int l, int r) {
+    if (l >= r) return;
+    int m = l + (r - l) / 2;
+    mergeSort(arr, l, m);
+    mergeSort(arr, m + 1, r);
+    mergeArr(arr, l, m, r);
+}
+
+int main() {
+    mt19937 gen(42);
+    uniform_real_distribution<double> dist(0.0, 1000000.0);
+
+    vector<vector<double>> arrays(10, vector<double>(N));
+    for (int i = 0; i < 10; i++) {
+        for (int j = 0; j < N; j++) arrays[i][j] = dist(gen);
+    }
+    sort(arrays[0].begin(), arrays[0].end());
+    sort(arrays[1].begin(), arrays[1].end(), greater<double>());
+
+    cout << "STT,Loai_Day,std_sort,QuickSort,HeapSort,MergeSort" << endl;
+
+    for (int idx = 0; idx < 10; idx++) {
+        string type_str = (idx == 0) ? "Day 1 (Tang dan)" : ((idx == 1) ? "Day 2 (Giam dan)" : "Day " + to_string(idx + 1) + " (Ngau nhien)");
+
+        // std::sort
+        auto temp = arrays[idx];
+        auto start = high_resolution_clock::now();
+        sort(temp.begin(), temp.end());
+        auto end = high_resolution_clock::now();
+        double t_std = duration_cast<milliseconds>(end - start).count();
+
+        // QuickSort
+        temp = arrays[idx];
+        start = high_resolution_clock::now();
+        quickSort(temp, 0, N - 1);
+        end = high_resolution_clock::now();
+        double t_quick = duration_cast<milliseconds>(end - start).count();
+
+        // HeapSort
+        temp = arrays[idx];
+        start = high_resolution_clock::now();
+        heapSort(temp);
+        end = high_resolution_clock::now();
+        double t_heap = duration_cast<milliseconds>(end - start).count();
+
+        // MergeSort
+        temp = arrays[idx];
+        start = high_resolution_clock::now();
+        mergeSort(temp, 0, N - 1);
+        end = high_resolution_clock::now();
+        double t_merge = duration_cast<milliseconds>(end - start).count();
+
+        cout << idx + 1 << " | " << type_str << " | " << t_std << " ms | " << t_quick << " ms | " << t_heap << " ms | " << t_merge << " ms" << endl;
+    }
+    return 0;
+}
